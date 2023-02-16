@@ -1,4 +1,4 @@
-import type { FlashState } from "./const";
+import type { FlashState, Manifest } from "./const";
 import type { EwtInstallDialog } from "./install-dialog";
 import { connect } from "./connect";
 
@@ -59,7 +59,7 @@ export class InstallButton extends HTMLElement {
     display: none;
   }`;
 
-  public manifest?: string;
+  public manifest?: string | Manifest;
 
   public eraseFirst?: boolean;
 

@@ -22,7 +22,7 @@ const resetTransport = async (transport: Transport) => {
 export const flash = async (
   onEvent: (state: FlashState) => void,
   port: SerialPort,
-  manifestPath: string,
+  manifestPath: string | undefined,
   manifest: Manifest,
   eraseFirst: boolean
 ) => {
@@ -111,45 +111,82 @@ export const flash = async (
     details: { done: false },
   });
 
-  const manifestURL = new URL(manifestPath, location.toString()).toString();
-  const filePromises = build.parts.map(async (part) => {
-    const url = new URL(part.path, manifestURL).toString();
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      throw new Error(
-        `Downlading firmware ${part.path} failed: ${resp.status}`
-      );
-    }
-
-    const reader = new FileReader();
-    const blob = await resp.blob();
-
-    return new Promise<string>((resolve) => {
-      reader.addEventListener("load", () => resolve(reader.result as string));
-      reader.readAsBinaryString(blob);
-    });
-  });
-
-  const fileArray: Array<{ data: string; address: number }> = [];
   let totalSize = 0;
+  const fileArray: Array<{ data: string; address: number }> = [];
 
-  for (let part = 0; part < filePromises.length; part++) {
-    try {
-      const data = await filePromises[part];
-      fileArray.push({ data, address: build.parts[part].offset });
-      totalSize += data.length;
-    } catch (err: any) {
-      fireStateEvent({
-        state: FlashStateType.ERROR,
-        message: err.message,
-        details: {
-          error: FlashError.FAILED_FIRMWARE_DOWNLOAD,
-          details: err.message,
-        },
+  if( manifestPath ) {
+    const manifestURL = new URL(manifestPath, location.toString()).toString();
+    const filePromises = build.parts.map(async (part) => {
+      if( !part.path ) {
+        throw new Error(
+          `Part path is not defined.`
+        );
+      }
+      const url = new URL(part.path, manifestURL).toString();
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        throw new Error(
+          `Downlading firmware ${part.path} failed: ${resp.status}`
+        );
+      }
+      
+      const reader = new FileReader();
+      const blob = await resp.blob();
+
+      return new Promise<string>((resolve) => {
+        reader.addEventListener("load", () => resolve(reader.result as string));
+        reader.readAsBinaryString(blob);
       });
-      await resetTransport(transport);
-      await transport.disconnect();
-      return;
+    });
+
+
+    for (let part = 0; part < filePromises.length; part++) {
+      try {
+        const data = await filePromises[part];
+        fileArray.push({ data, address: build.parts[part].offset });
+        totalSize += data.length;
+      } catch (err: any) {
+        fireStateEvent({
+          state: FlashStateType.ERROR,
+          message: err.message,
+          details: {
+            error: FlashError.FAILED_FIRMWARE_DOWNLOAD,
+            details: err.message,
+          },
+        });
+        await resetTransport(transport);
+        await transport.disconnect();
+        return;
+      }
+    }
+  } else {
+    // using embedded manifest and firmware binary is also embedded in the manifest as BASE64.
+    
+    for (let part = 0; part < build.parts.length; part++) {
+      try {
+        const base64Data = build.parts[part].data;
+        if( base64Data ) {
+          const data = atob(base64Data);
+          fileArray.push({ data, address: build.parts[part].offset });
+          totalSize += data.length;
+        } else {
+          throw new Error(
+            `Part data is not defined.`
+          );
+        }
+      } catch (err: any) {
+        fireStateEvent({
+          state: FlashStateType.ERROR,
+          message: err.message,
+          details: {
+            error: FlashError.FAILED_FIRMWARE_DOWNLOAD,
+            details: err.message,
+          },
+        });
+        await resetTransport(transport);
+        await transport.disconnect();
+        return;
+      }
     }
   }
 

@@ -7,7 +7,8 @@ export interface Logger {
 export interface Build {
   chipFamily: "ESP32" | "ESP8266" | "ESP32-S2" | "ESP32-S3" | "ESP32-C3";
   parts: {
-    path: string;
+    path: string | undefined;
+    data: string | undefined;
     offset: number;
   }[];
 }

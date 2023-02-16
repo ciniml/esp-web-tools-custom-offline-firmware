@@ -43,7 +43,8 @@ const OK_ICON = "🎉";
 export class EwtInstallDialog extends LitElement {
   public port!: SerialPort;
 
-  public manifestPath!: string;
+  public manifestPath: string | undefined;
+  public manifest: Manifest | undefined;
 
   public logger: Logger = console;
 
@@ -812,9 +813,17 @@ export class EwtInstallDialog extends LitElement {
         "Serial port is not readable/writable. Close any other application using it and try again.";
       return;
     }
-
+    
     try {
-      this._manifest = await downloadManifest(this.manifestPath);
+      if( this.manifestPath ) {
+        this._manifest = await downloadManifest(this.manifestPath);
+      } else if( this.manifest ) {
+        this._manifest = this.manifest;
+      } else {
+        this._state = "ERROR";
+        this._error = "No manifest is defined";
+        return;
+      }
     } catch (err: any) {
       this._state = "ERROR";
       this._error = "Failed to download manifest";

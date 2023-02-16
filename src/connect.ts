@@ -1,3 +1,4 @@
+import { Manifest } from "./const.js";
 import type { InstallButton } from "./install-button.js";
 
 export const connect = async (button: InstallButton) => {
@@ -29,7 +30,12 @@ export const connect = async (button: InstallButton) => {
 
   const el = document.createElement("ewt-install-dialog");
   el.port = port;
-  el.manifestPath = button.manifest || button.getAttribute("manifest")!;
+  const manifest = button.manifest || button.getAttribute("manifest")!;
+  if( typeof manifest === 'string' ) {
+    el.manifestPath = manifest;
+  } else {
+    el.manifest = manifest as Manifest;
+  }
   el.overrides = button.overrides;
   el.addEventListener(
     "closed",
