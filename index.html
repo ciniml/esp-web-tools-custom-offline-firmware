@@ -3,7 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <title>ESP Web Tools for custom offline firmware</title>
-    <script module src="/dist/web/install-button.js"></script>
+    <script module>
+      import(
+        // In development we import locally.
+        window.location.hostname === "localhost"
+          ? "/dist/web/install-button.js"
+          : "https://www.fugafuga.org/esp-web-tools-custom-offline-firmware/dist/web/install-button.js"
+      );
+    </script>
     <style>
       .hidden {
         display: none;
