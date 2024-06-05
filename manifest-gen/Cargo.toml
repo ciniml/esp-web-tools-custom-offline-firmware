@@ -1,0 +1,17 @@
+[package]
+name = "esp-web-tools-manifest-gen"
+version = "0.1.0"
+edition = "2021"
+authors = ["Kenta IDA <fuga@fugafuga.org>"]
+description = "Manifest file generator for customized ESP Web Tools"
+
+[[bin]]
+name = "manifest-gen"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.70"
+base64 = "0.21.0"
+clap = { version = "4.1.13", features = ["derive"] }
+clap-num = "1.0.2"
+esp-idf-part = "0.3.0"
